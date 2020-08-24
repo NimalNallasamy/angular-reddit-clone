@@ -1,13 +1,14 @@
 import { Injectable } from "@angular/core";
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { AuthService } from './auth/shared/auth.service';
 import { catchError, switchMap, filter, take } from 'rxjs/operators';
 import { LoginResponsePayload } from './auth/login/login-response.payload';
 
-@Injectable({
-    providedIn : "root"
-})
+// @Injectable({
+//     providedIn : "root"
+// })
+@Injectable()
 export class TokenInterceptor implements HttpInterceptor{
 
     isTokenRefreshing : boolean;
@@ -19,9 +20,12 @@ export class TokenInterceptor implements HttpInterceptor{
     
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         
+        if (req.url.indexOf('refresh') !== -1 || req.url.indexOf('login') !== -1) {
+            return next.handle(req);
+        }
         const jwtToken = this.authService.getJwtToken();
         if(jwtToken){
-            this.addToken(req, jwtToken);
+            req = this.addToken(req, jwtToken);
         }
         return next.handle(req).pipe(catchError(error => {
             if(error instanceof HttpErrorResponse && error.status == 403){
@@ -58,9 +62,12 @@ export class TokenInterceptor implements HttpInterceptor{
         return null;
     }
     addToken(req: HttpRequest<any>, jwtToken: any) {
-        return req.clone({
-            headers : req.headers.set('Authorizarion' : 'Bearer '+jwtToken);
-        })
+       
+        const newReq = req.clone({
+            headers : req.headers.set('Authorization' , 'Bearer '+jwtToken).set('withCredentials','true')
+        });
+        return newReq;
+       
     }
     
 }

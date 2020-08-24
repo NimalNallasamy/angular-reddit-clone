@@ -8,4 +8,6 @@ export class PostModel{
     url : string;
     userName : string;
     voteCount : string;
+    upVote : boolean;
+    downVote : boolean;
 }
